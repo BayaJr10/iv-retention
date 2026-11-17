@@ -19,30 +19,40 @@ import streamlit as st
 
 from iv_retention import pipeline as p
 
-BRAND = "#6A2C91"
+from iv_retention import ui
+
+BRAND = ui.PLUM
 SAMPLE = Path(__file__).parent / "sample_data" / "sample_sales.csv"
 
-st.set_page_config(page_title="Immaculate Vibes – Retention", page_icon="🧵", layout="wide")
+st.set_page_config(page_title="Immaculate Vibes – Retention", layout="wide",
+                   page_icon=str(ui.logo_path()) if ui.logo_path() else "🧵")
+ui.inject_css()
 
 
 # ---------------------------------------------------------------------------
-# Optional password gate (set APP_PASSWORD in Streamlit secrets to enable)
+# Password gate (set APP_PASSWORD in Streamlit secrets to enable)
 # ---------------------------------------------------------------------------
 def _check_password() -> bool:
     try:
         pw = st.secrets.get("APP_PASSWORD")
     except Exception:  # no secrets file locally
         pw = None
-    if not pw:
+    if not pw or st.session_state.get("auth_ok"):
         return True
-    if st.session_state.get("auth_ok"):
-        return True
-    entered = st.text_input("Password", type="password")
-    if entered and entered == pw:
-        st.session_state["auth_ok"] = True
-        st.rerun()
-    elif entered:
-        st.error("Wrong password")
+    _, mid, _ = st.columns([1, 1.2, 1])
+    with mid:
+        st.markdown(f'<div style="text-align:center;margin:12vh 0 18px">{ui.logo_html(84)}</div>',
+                    unsafe_allow_html=True)
+        st.markdown('<h3 style="text-align:center;margin-bottom:4px">Retention Action Engine</h3>'
+                    '<p style="text-align:center;color:#6B6275">Staff access only</p>', unsafe_allow_html=True)
+        with st.form("login"):
+            entered = st.text_input("Password", type="password")
+            ok = st.form_submit_button("Sign in", width="stretch", type="primary")
+        if ok and entered == pw:
+            st.session_state["auth_ok"] = True
+            st.rerun()
+        elif ok:
+            st.error("That password isn't right.")
     return False
 
 
@@ -55,7 +65,7 @@ def _load(raw: bytes) -> pd.DataFrame:
     return p.load_orders(raw)
 
 
-@st.cache_data(show_spinner=False)
+@st.cache_data(show_spinner="Scoring customers…")
 def _run(raw: bytes, snapshot, drift, lapse, holdout, consent_raw):
     df = _load(raw)
     cfg = p.make_config(snapshot_date=snapshot, drift_days=drift, lapse_days=lapse, holdout_share=holdout)
@@ -70,9 +80,10 @@ def kes(x: float) -> str:
 # ---------------------------------------------------------------------------
 # Sidebar – inputs
 # ---------------------------------------------------------------------------
-st.sidebar.title("Immaculate Vibes")
-st.sidebar.caption("Retention Action Engine")
-up = st.sidebar.file_uploader("1. Upload the latest sales export (CSV)", type="csv")
+ui.sidebar_logo()
+st.sidebar.markdown("**Retention Action Engine**")
+ui.side_step("Step 1 · This week's data")
+up = st.sidebar.file_uploader("Latest sales export (CSV)", type="csv")
 if up is not None:
     raw = up.getvalue()
     src_label = up.name
@@ -83,9 +94,10 @@ else:
     st.info("Upload the sales export to begin.")
     st.stop()
 
-consent_up = st.sidebar.file_uploader("2. Optional: consent register (customer_id, whatsapp_consent)", type="csv")
+ui.side_step("Step 2 · Consent (optional)")
+consent_up = st.sidebar.file_uploader("Consent register (customer_id, whatsapp_consent)", type="csv")
 
-st.sidebar.markdown("**3. Settings**")
+ui.side_step("Step 3 · Settings")
 snap_mode = st.sidebar.radio("Score as of", ["Day after last order in file", "Today", "Pick a date"], index=0)
 snapshot = None
 if snap_mode == "Today":
@@ -93,13 +105,14 @@ if snap_mode == "Today":
 elif snap_mode == "Pick a date":
     snapshot = st.sidebar.date_input("Date").isoformat()
 
-auto = st.sidebar.checkbox("Set drift/lapse thresholds from the data (recommended)", value=True)
-drift = lapse = None
-if not auto:
-    drift = st.sidebar.number_input("Drifting after (days silent)", 30, 720, 209)
-    lapse = st.sidebar.number_input("Lapsed after (days silent)", 60, 900, 351)
-holdout = st.sidebar.slider("Hold-out group (not messaged)", 0, 40, 20, 5,
-                            help="A random share kept un-messaged so we can measure whether messages work.") / 100
+with st.sidebar.expander("Advanced"):
+    auto = st.checkbox("Set drift/lapse thresholds from the data (recommended)", value=True)
+    drift = lapse = None
+    if not auto:
+        drift = st.number_input("Drifting after (days silent)", 30, 720, 209)
+        lapse = st.number_input("Lapsed after (days silent)", 60, 900, 351)
+    holdout = st.slider("Hold-out group (not messaged) %", 0, 40, 20, 5,
+                        help="A random share kept un-messaged so we can measure whether messages work.") / 100
 
 try:
     res = _run(raw, snapshot, drift, lapse, holdout, consent_up.getvalue() if consent_up else None)
@@ -108,14 +121,20 @@ except p.DataValidationError as e:
     st.stop()
 
 k, t = res.kpis, res.config["targets"]
-st.title("Retention Action Engine")
-st.caption(f"Source: {src_label} · scored as of **{k['snapshot_date']}** · "
-           f"{k['customers']:,} customers · {k['orders']:,} orders")
-if "SAMPLE" in src_label:
-    st.warning("You are looking at the de-identified sample. Upload the real export in the sidebar.")
+n_msg = int((res.actions["group"] == "Message").sum()) if len(res.actions) else 0
+ui.header("Retention Action Engine",
+          f"Scored as of <b>{k['snapshot_date']}</b> · {k['customers']:,} customers · {k['orders']:,} orders")
+is_sample = "SAMPLE" in src_label
+ui.chips([("Source", src_label), ("To contact this week", f"{n_msg}"),
+          ("Drift / lapse after", f"{res.drift_days:.0f} / {res.lapse_days:.0f} days"),
+          ("Data check", "passed" if res.quality["ok"] else "failed")],
+         warn={0} if is_sample else set())
+if is_sample:
+    st.warning("You're viewing the de-identified sample. Upload the real export in the sidebar (Step 1).")
 
 tab_kpi, tab_act, tab_seg, tab_roi, tab_mon, tab_dq = st.tabs(
-    ["📊 KPIs", "📲 This week's actions", "👥 Segments", "💰 Win-back calculator", "📈 Did it work?", "✅ Data quality"])
+    ["Overview", f"This week's actions ({n_msg})", "Segments", "Win-back calculator", "Did it work?",
+     "Data quality"])
 
 # ---------------------------------------------------------------------------
 # KPIs
@@ -123,26 +142,30 @@ tab_kpi, tab_act, tab_seg, tab_roi, tab_mon, tab_dq = st.tabs(
 with tab_kpi:
     st.subheader("Are we on track?")
     c1, c2, c3, c4 = st.columns(4)
-    c1.metric("2nd order within 90 days (primary KPI)", f"{k['second_order_90d']:.0%}",
-              f"target {t['second_order_90d']:.0%}", delta_color="off",
-              help=f"Customers whose first order was ≥90 days ago (n={k['second_order_90d_n']}). "
-                   f"Recent cohort (first order 90–180 days ago): {k['second_order_90d_recent']:.0%} "
-                   f"(n={k['second_order_90d_recent_n']}).")
-    c2.metric("Cancelled + returned orders", f"{k['cancel_return_rate']:.1%}",
-              f"last 90 days {k['cancel_return_rate_last90']:.1%} · target {t['cancel_return_rate']:.1%}",
-              delta_color="off")
-    c3.metric("Regulars drifting / lapsed", f"{k['drifting']} / {k['lapsed']}",
-              f"{kes(k['winback_pool_revenue'])} past revenue", delta_color="off")
-    c4.metric("Gross margin (estimate)", f"{k['gross_margin']:.0%}", f"hold ≥ {t['gross_margin']:.0%}",
-              delta_color="off")
+    so, so_t = k["second_order_90d"], t["second_order_90d"]
+    ui.kpi_card(c1, "2nd order within 90 days · main KPI", f"{so:.0%}",
+                f"Target {so_t:.0%} · recent cohort {k['second_order_90d_recent']:.0%} "
+                f"(n={k['second_order_90d_recent_n']})",
+                status="good" if so >= so_t else "warn", progress=so / 0.5, target_mark=so_t / 0.5, primary=True)
+    cr, cr_t = k["cancel_return_rate_last90"], t["cancel_return_rate"]
+    ui.kpi_card(c2, "Cancelled + returned · last 90 days", f"{cr:.1%}",
+                f"Target ≤ {cr_t:.1%} · all-time {k['cancel_return_rate']:.1%}",
+                status="good" if cr <= cr_t else "warn", progress=cr / 0.15, target_mark=cr_t / 0.15)
+    ui.kpi_card(c3, "Regulars drifting / lapsed", f"{k['drifting']} / {k['lapsed']}",
+                f"{kes(k['winback_pool_revenue'])} of past revenue to win back", status="info")
+    gm, gm_t = k["gross_margin"], t["gross_margin"]
+    ui.kpi_card(c4, "Gross margin (estimate)", f"{gm:.0%}", f"Hold at ≥ {gm_t:.0%}",
+                status="good" if gm >= gm_t - 0.005 else "warn", progress=gm, target_mark=gm_t)
+    st.write("")
     c5, c6, c7, c8 = st.columns(4)
-    c5.metric("Repeat customers", f"{k['repeat_rate']:.0%}")
-    c6.metric("New customers / month (last 3 full months)", f"{k['new_customers_per_month_last3']:.0f}")
-    c7.metric("First-timers in nudge window (0–90 days)", k["new_in_nudge_window"])
-    c8.metric("Delivered revenue (all time)", kes(k["delivered_revenue"]))
+    ui.kpi_card(c5, "Customers who ordered again", f"{k['repeat_rate']:.0%}", "All customers, all time")
+    ui.kpi_card(c6, "New customers per month", f"{k['new_customers_per_month_last3']:.0f}",
+                "Average of the last 3 full months")
+    ui.kpi_card(c7, "First-timers in the nudge window", f"{k['new_in_nudge_window']}", "0–90 days since first order")
+    ui.kpi_card(c8, "Delivered revenue", kes(k["delivered_revenue"]), "All time, excl. delivery fees")
     st.caption(f"Drifting = silent longer than {res.drift_days:.0f} days (75% of repeat gaps are shorter); "
-               f"Lapsed = silent longer than {res.lapse_days:.0f} days (90%). "
-               "Small recent cohorts move a lot week to week — judge the trend over a month, not one week.")
+               f"Lapsed = longer than {res.lapse_days:.0f} days (90%). Bars show progress; the dark tick is the "
+               "target. Small recent cohorts move a lot week to week — judge the trend over a month.")
 
 # ---------------------------------------------------------------------------
 # Actions
@@ -151,20 +174,29 @@ with tab_act:
     a = res.actions
     to_msg = a[a["group"] == "Message"]
     st.subheader(f"{len(to_msg)} customers to contact this week")
-    st.markdown(
-        "**How to use:** work top to bottom (most valuable first). Message on WhatsApp **only if consent is "
-        "'Yes'** — if it says *Unknown*, ask the customer first or skip. **Do not message the hold-out "
-        "rows**: they are how we prove the messages work. Tick off each customer in your own copy.")
+    nud = to_msg["action"].str.startswith("Reorder").sum()
+    ui.chips([("Reorder nudges", str(int(nud))), ("Win-backs", str(int(len(to_msg) - nud))),
+              ("Hold-out (don't message)", str(int(len(a) - len(to_msg)))),
+              ("Consent unknown", str(int(to_msg["whatsapp_consent"].astype(str).str.startswith(("Unknown", "Not")).sum())))],
+             warn={3})
+    ui.howto("<b>How to use:</b> work top to bottom (most valuable first). Message on WhatsApp <b>only if consent "
+             "is 'Yes'</b> — if it says <i>Unknown</i>, ask first or skip. <b>Don't message hold-out rows</b>: they "
+             "prove whether the messages work.")
+    st.write("")
     f1, f2 = st.columns([2, 1])
     kinds = f1.multiselect("Show", sorted(a["action"].unique()), default=sorted(a["action"].unique()))
     show_hold = f2.checkbox("Show hold-out rows", value=False)
     view = a[a["action"].isin(kinds)]
     if not show_hold:
         view = view[view["group"] == "Message"]
-    st.dataframe(view, width="stretch", hide_index=True,
-                 column_config={"lifetime_revenue": st.column_config.NumberColumn("lifetime revenue (KES)",
-                                                                                  format="%d"),
-                                "suggested_message": st.column_config.TextColumn(width="large")})
+    st.dataframe(view.drop(columns=["priority"]), width="stretch", hide_index=True, height=460,
+                 column_config={
+                     "customer_id": st.column_config.TextColumn("Customer", pinned=True),
+                     "action": "Action", "status": "Status", "days_silent": "Days quiet", "orders": "Orders",
+                     "lifetime_revenue": st.column_config.NumberColumn("Lifetime spend (KES)", format="localized"),
+                     "suggested_message": st.column_config.TextColumn("Suggested message", width="large"),
+                     "first_channel": "First channel", "county": "County", "group": "Group",
+                     "whatsapp_consent": "WhatsApp consent"})
     st.download_button("⬇️ Download full action list (incl. hold-out)", a.to_csv(index=False).encode(),
                        f"action_list_{k['snapshot_date']}.csv", "text/csv")
     with st.expander("Message guide for staff"):
@@ -184,7 +216,7 @@ with tab_seg:
     l, r = st.columns(2)
     for col, field, title, fmt in [(l, "customers", "Customers per segment", ",.0f"),
                                    (r, "revenue_share", "Share of delivered revenue", ".0%")]:
-        ch = (alt.Chart(seg).mark_bar(color=BRAND, cornerRadiusEnd=4)
+        ch = (alt.Chart(seg).mark_bar(color=BRAND, cornerRadiusEnd=4, size=18)
               .encode(y=alt.Y("Segment:N", sort=p.SEG_ORDER, title=None),
                       x=alt.X(f"{field}:Q", title=None, axis=alt.Axis(format=fmt, grid=True)),
                       tooltip=["Segment", alt.Tooltip(f"{field}:Q", format=fmt)])
