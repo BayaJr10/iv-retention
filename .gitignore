@@ -1,0 +1,11 @@
+# Real customer data never goes to git (Data Protection Act, capstone data-handling rules)
+data/*
+outputs/*
+*.xlsx
+.streamlit/secrets.toml
+__pycache__/
+.ipynb_checkpoints/
+.pytest_cache/
+figures/
+!data/.gitkeep
+!outputs/.gitkeep

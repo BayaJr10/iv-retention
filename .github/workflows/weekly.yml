@@ -1,0 +1,45 @@
+name: Weekly retention scoring
+
+on:
+  schedule:
+    - cron: "0 4 * * 1"      # Mondays 07:00 Nairobi time (04:00 UTC)
+  workflow_dispatch:          # "Run workflow" button for a manual run
+  push:
+    branches: [main]
+
+jobs:
+  test-and-score:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - run: pip install -r requirements.txt pytest
+
+      # 1. Tests must pass before any list is produced
+      - run: pytest -q
+
+      # 2. Get the latest export. The real file is NOT in the repo: store a
+      #    download link to it (e.g. a private Google Drive / OneDrive direct link)
+      #    as the repository secret SALES_CSV_URL. Without it, the sample is used.
+      - name: Fetch latest sales export
+        env:
+          SALES_CSV_URL: ${{ secrets.SALES_CSV_URL }}
+        run: |
+          mkdir -p data
+          if [ -n "$SALES_CSV_URL" ]; then
+            curl -sSL "$SALES_CSV_URL" -o data/latest.csv
+          else
+            cp sample_data/sample_sales.csv data/latest.csv
+          fi
+
+      # 3. Score as of today and write the action list
+      - run: python run_pipeline.py --data data/latest.csv --snapshot today --out outputs
+
+      # 4. Keep the outputs for 30 days as a private download (Actions > run > Artifacts)
+      - uses: actions/upload-artifact@v4
+        with:
+          name: retention-outputs
+          path: outputs/
+          retention-days: 30
