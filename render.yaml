@@ -1,0 +1,18 @@
+# Render Blueprint: one free web service running the Streamlit app.
+# Render > New > Blueprint > pick this repo. You'll be asked for APP_PASSWORD.
+services:
+  - type: web
+    name: iv-retention
+    runtime: python
+    plan: free
+    region: frankfurt          # closest Render region to Nairobi
+    branch: main
+    buildCommand: pip install -r requirements.txt
+    startCommand: streamlit run app.py --server.port $PORT --server.address 0.0.0.0 --server.headless true
+    healthCheckPath: /_stcore/health
+    autoDeploy: true
+    envVars:
+      - key: PYTHON_VERSION
+        value: 3.12.7
+      - key: APP_PASSWORD
+        sync: false            # entered in the dashboard, never stored in git

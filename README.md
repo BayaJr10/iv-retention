@@ -70,6 +70,16 @@ The app opens on the de-identified sample until a real file is uploaded, so the 
 **Alternatives:** `docker build -t iv-retention . && docker run -p 8501:8501 iv-retention` on any small VM
 (e.g. a Johannesburg-region instance, as in the report's architecture), or Hugging Face Spaces (Streamlit SDK).
 
+## Deploy on Render (free)
+
+1. Sign in at **render.com** with GitHub.
+2. **New → Blueprint**, pick `BayaJr10/iv-retention`. Render reads `render.yaml`.
+3. When asked, enter a strong `APP_PASSWORD`, then **Apply**. The first build takes 3–5 minutes.
+4. Open the `https://iv-retention-xxxx.onrender.com` link. You should see only the sign-in screen.
+
+Free services sleep after 15 minutes without visitors; the next visit takes about a minute to wake.
+Without `APP_PASSWORD` the app refuses to start on Render (it fails closed).
+
 ## Schedule the weekly batch job (GitHub Actions)
 
 `.github/workflows/weekly.yml` runs every Monday 07:00 Nairobi time (and on every push):

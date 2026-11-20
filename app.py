@@ -10,6 +10,7 @@ report for the file.
 from __future__ import annotations
 
 import io
+import os
 from datetime import date
 from pathlib import Path
 
@@ -33,10 +34,17 @@ ui.inject_css()
 # Password gate (set APP_PASSWORD in Streamlit secrets to enable)
 # ---------------------------------------------------------------------------
 def _check_password() -> bool:
-    try:
-        pw = st.secrets.get("APP_PASSWORD")
-    except Exception:  # no secrets file locally
-        pw = None
+    # Render / Docker: environment variable. Streamlit Cloud: secrets.toml.
+    pw = os.environ.get("APP_PASSWORD")
+    if not pw:
+        try:
+            pw = st.secrets.get("APP_PASSWORD")
+        except Exception:  # no secrets file locally
+            pw = None
+    if not pw and os.environ.get("RENDER"):
+        # Fail closed on a public host: never serve the app without a password
+        st.error("This app is not configured yet: set APP_PASSWORD in Render > Environment.")
+        return False
     if not pw or st.session_state.get("auth_ok"):
         return True
     _, mid, _ = st.columns([1, 1.2, 1])
