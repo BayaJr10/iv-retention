@@ -140,9 +140,11 @@ ui.chips([("Source", src_label), ("To contact this week", f"{n_msg}"),
 if is_sample:
     st.warning("You're viewing the de-identified sample. Upload the real export in the sidebar (Step 1).")
 
-tab_kpi, tab_act, tab_seg, tab_roi, tab_mon, tab_dq = st.tabs(
-    ["Overview", f"This week's actions ({n_msg})", "Segments", "Win-back calculator", "Did it work?",
-     "Data quality"])
+tab_kpi, tab_act, tab_seg, tab_cust, tab_roi, tab_mon, tab_dq = st.tabs(
+    ["Overview", f"This week's actions ({n_msg})", "Segments", "Customer lookup", "Win-back calculator",
+     "Did it work?", "Data quality"])
+orders = _load(raw)
+orders = orders[orders["order_datetime"] < res.snapshot]
 
 # ---------------------------------------------------------------------------
 # KPIs
@@ -175,6 +177,26 @@ with tab_kpi:
                f"Lapsed = longer than {res.lapse_days:.0f} days (90%). Bars show progress; the dark tick is the "
                "target. Small recent cohorts move a lot week to week — judge the trend over a month.")
 
+    st.markdown("#### Orders per month: new vs returning customers")
+    o = orders.sort_values("order_datetime").copy()
+    o["Customer"] = (o.groupby("customer_id").cumcount() == 0).map({True: "First order", False: "Repeat order"})
+    o["Month"] = o["order_datetime"].dt.to_period("M").dt.to_timestamp()
+    monthly = o.groupby(["Month", "Customer"]).size().reset_index(name="Orders")
+    pick = alt.selection_point(fields=["Customer"], bind="legend")
+    brush = alt.selection_interval(encodings=["x"])
+    base = alt.Chart(monthly).encode(
+        x=alt.X("yearmonth(Month):T", title=None),
+        color=alt.Color("Customer:N", scale=alt.Scale(domain=["First order", "Repeat order"],
+                                                      range=[BRAND, "#C9B8D9"]),
+                        legend=alt.Legend(orient="top", title="Click to highlight")))
+    bars = base.mark_bar(cornerRadiusTopLeft=3, cornerRadiusTopRight=3).encode(
+        y=alt.Y("sum(Orders):Q", title="Orders"),
+        opacity=alt.condition(pick, alt.value(1), alt.value(0.25)),
+        tooltip=[alt.Tooltip("yearmonth(Month):T", title="Month"), "Customer:N", "Orders:Q"],
+    ).add_params(pick, brush).properties(height=280)
+    st.altair_chart(bars, width="stretch")
+    st.caption("Hover a bar for the numbers; click the legend to highlight one group; drag across months to select a period.")
+
 # ---------------------------------------------------------------------------
 # Actions
 # ---------------------------------------------------------------------------
@@ -191,21 +213,50 @@ with tab_act:
              "is 'Yes'</b> — if it says <i>Unknown</i>, ask first or skip. <b>Don't message hold-out rows</b>: they "
              "prove whether the messages work.")
     st.write("")
-    f1, f2 = st.columns([2, 1])
+    f1, f2, f3 = st.columns([2, 1.2, 1])
     kinds = f1.multiselect("Show", sorted(a["action"].unique()), default=sorted(a["action"].unique()))
-    show_hold = f2.checkbox("Show hold-out rows", value=False)
-    view = a[a["action"].isin(kinds)]
+    find = f2.text_input("Find a customer code", placeholder="e.g. C03897")
+    show_hold = f3.toggle("Show hold-out rows", value=False)
+
+    # Progress is kept for this session, per scoring date, so staff can tick customers off as they go
+    key = f"progress_{k['snapshot_date']}"
+    if key not in st.session_state:
+        st.session_state[key] = pd.DataFrame({"customer_id": a["customer_id"], "done": False, "reply": "—"})
+    prog = st.session_state[key]
+    work = a.merge(prog, on="customer_id", how="left")
+    view = work[work["action"].isin(kinds)]
     if not show_hold:
         view = view[view["group"] == "Message"]
-    st.dataframe(view.drop(columns=["priority"]), width="stretch", hide_index=True, height=460,
-                 column_config={
-                     "customer_id": st.column_config.TextColumn("Customer", pinned=True),
-                     "action": "Action", "status": "Status", "days_silent": "Days quiet", "orders": "Orders",
-                     "lifetime_revenue": st.column_config.NumberColumn("Lifetime spend (KES)", format="localized"),
-                     "suggested_message": st.column_config.TextColumn("Suggested message", width="large"),
-                     "first_channel": "First channel", "county": "County", "group": "Group",
-                     "whatsapp_consent": "WhatsApp consent"})
-    st.download_button("⬇️ Download full action list (incl. hold-out)", a.to_csv(index=False).encode(),
+    if find:
+        view = view[view["customer_id"].str.contains(find.strip(), case=False)]
+
+    edited = st.data_editor(
+        view[["done", "customer_id", "action", "whatsapp_consent", "suggested_message", "reply", "days_silent",
+              "orders", "lifetime_revenue", "status", "group", "first_channel", "county"]],
+        width="stretch", hide_index=True, height=460, key=f"editor_{key}",
+        disabled=["customer_id", "action", "whatsapp_consent", "suggested_message", "days_silent", "orders",
+                  "lifetime_revenue", "status", "group", "first_channel", "county"],
+        column_config={
+            "done": st.column_config.CheckboxColumn("Sent", help="Tick when the message has been sent"),
+            "customer_id": st.column_config.TextColumn("Customer", pinned=True),
+            "action": "Action", "whatsapp_consent": "WhatsApp consent",
+            "suggested_message": st.column_config.TextColumn("Suggested message", width="large"),
+            "reply": st.column_config.SelectboxColumn("Reply", options=["—", "Ordered", "Interested", "No reply",
+                                                                         "STOP (opt out)"]),
+            "days_silent": "Days quiet", "orders": "Orders",
+            "lifetime_revenue": st.column_config.NumberColumn("Lifetime spend (KES)", format="localized"),
+            "status": "Status", "group": "Group", "first_channel": "First channel", "county": "County"})
+    upd = prog.set_index("customer_id")
+    upd.loc[edited["customer_id"], ["done", "reply"]] = edited[["done", "reply"]].values
+    st.session_state[key] = upd.reset_index()
+    prog = st.session_state[key]
+    msg_ids = set(to_msg["customer_id"])
+    sent = int(prog[prog["customer_id"].isin(msg_ids)]["done"].sum())
+    stops = int((prog["reply"] == "STOP (opt out)").sum())
+    st.progress(sent / max(len(msg_ids), 1), text=f"{sent} of {len(msg_ids)} messages sent this week"
+                + (f" · {stops} opted out: record them in the consent register today" if stops else ""))
+    out = a.merge(prog, on="customer_id", how="left")
+    st.download_button("⬇️ Download list with progress (incl. hold-out)", out.to_csv(index=False).encode(),
                        f"action_list_{k['snapshot_date']}.csv", "text/csv")
     with st.expander("Message guide for staff"):
         for step, msg in p.NUDGE_MESSAGES.items():
@@ -221,23 +272,84 @@ with tab_act:
 with tab_seg:
     seg = res.segments.reset_index().rename(columns={"index": "Segment"})
     st.subheader("Who our customers are (RFM segments)")
-    l, r = st.columns(2)
-    for col, field, title, fmt in [(l, "customers", "Customers per segment", ",.0f"),
-                                   (r, "revenue_share", "Share of delivered revenue", ".0%")]:
-        ch = (alt.Chart(seg).mark_bar(color=BRAND, cornerRadiusEnd=4, size=18)
-              .encode(y=alt.Y("Segment:N", sort=p.SEG_ORDER, title=None),
-                      x=alt.X(f"{field}:Q", title=None, axis=alt.Axis(format=fmt, grid=True)),
-                      tooltip=["Segment", alt.Tooltip(f"{field}:Q", format=fmt)])
-              .properties(title=title, height=240))
-        col.altair_chart(ch, width="stretch")
-    st.dataframe(seg.style.format({"customers": "{:,.0f}", "avg_recency_days": "{:,.0f}", "avg_orders": "{:.1f}",
-                                   "avg_revenue": "{:,.0f}", "total_revenue": "{:,.0f}",
-                                   "customer_share": "{:.0%}", "revenue_share": "{:.0%}"}),
+    st.caption("Click a segment bar to list its customers below; click empty space to clear.")
+    seg_long = seg.melt(id_vars="Segment", value_vars=["customer_share", "revenue_share"],
+                        var_name="Measure", value_name="Share")
+    seg_long["Measure"] = seg_long["Measure"].map({"customer_share": "Share of customers",
+                                                   "revenue_share": "Share of revenue"})
+    chosen = alt.selection_point(fields=["Segment"], name="seg_pick")
+    ch = (alt.Chart(seg_long).mark_bar(cornerRadiusEnd=4)
+          .encode(y=alt.Y("Segment:N", sort=p.SEG_ORDER, title=None),
+                  yOffset="Measure:N",
+                  x=alt.X("Share:Q", title=None, axis=alt.Axis(format=".0%")),
+                  color=alt.Color("Measure:N", scale=alt.Scale(range=["#C9B8D9", BRAND]),
+                                  legend=alt.Legend(orient="top", title=None)),
+                  opacity=alt.condition(chosen, alt.value(1), alt.value(0.3)),
+                  tooltip=["Segment", "Measure", alt.Tooltip("Share:Q", format=".0%")])
+          .add_params(chosen).properties(height=320))
+    ev = st.altair_chart(ch, width="stretch", on_select="rerun", key="seg_chart")
+    picked = []
+    try:
+        picked = [d.get("Segment") for d in ev.selection.get("seg_pick", []) if d.get("Segment")]
+    except Exception:
+        picked = []
+    life_view = res.lifecycle.reset_index().rename(columns={"index": "customer_id"})
+    if picked:
+        sub = life_view[life_view["Segment"].isin(picked)]
+        st.markdown(f"**{', '.join(picked)}: {len(sub)} customers**")
+        st.dataframe(sub[["customer_id", "status", "delivered_orders", "total_revenue", "days_since_last_order",
+                          "first_channel", "county"]].sort_values("total_revenue", ascending=False),
+                     width="stretch", hide_index=True, height=260,
+                     column_config={"customer_id": "Customer", "status": "Status", "delivered_orders": "Orders",
+                                    "total_revenue": st.column_config.NumberColumn("Spend (KES)", format="localized"),
+                                    "days_since_last_order": "Days quiet", "first_channel": "First channel",
+                                    "county": "County"})
+    nice = seg.rename(columns={"customers": "Customers", "avg_recency_days": "Avg days since last order",
+                               "avg_orders": "Avg orders", "avg_revenue": "Avg spend (KES)",
+                               "total_revenue": "Total spend (KES)", "customer_share": "Share of customers",
+                               "revenue_share": "Share of revenue"})
+    st.dataframe(nice.style.format({"Customers": "{:,.0f}", "Avg days since last order": "{:,.0f}",
+                                    "Avg orders": "{:.1f}", "Avg spend (KES)": "{:,.0f}",
+                                    "Total spend (KES)": "{:,.0f}", "Share of customers": "{:.0%}",
+                                    "Share of revenue": "{:.0%}"}),
                  width="stretch", hide_index=True)
     cs = res.lifecycle[["status", "Segment", "delivered_orders", "total_revenue", "days_since_last_order",
                         "first_channel", "county", "age_group"]]
     st.download_button("⬇️ Download every customer's status", cs.to_csv().encode(),
                        f"customer_status_{k['snapshot_date']}.csv", "text/csv")
+
+# ---------------------------------------------------------------------------
+# Customer lookup
+# ---------------------------------------------------------------------------
+with tab_cust:
+    st.subheader("Look up a customer")
+    ids = sorted(res.lifecycle.index)
+    default_id = res.actions["customer_id"].iloc[0] if len(res.actions) else ids[0]
+    cid = st.selectbox("Customer code", ids, index=ids.index(default_id) if default_id in ids else 0)
+    row = res.lifecycle.loc[cid]
+    h = orders[orders["customer_id"] == cid].sort_values("order_datetime")
+    c1, c2, c3, c4 = st.columns(4)
+    ui.kpi_card(c1, "Status", str(row["status"]), f"Segment: {row.get('Segment', '—')}")
+    ui.kpi_card(c2, "Delivered orders", f"{int(row['delivered_orders'])}", f"{len(h)} placed in total")
+    ui.kpi_card(c3, "Lifetime spend", kes(row["total_revenue"]), "Delivered orders only")
+    dsl = row["days_since_last_order"]
+    ui.kpi_card(c4, "Days since last order", "—" if pd.isna(dsl) else f"{int(dsl)}",
+                f"Drifting after {res.drift_days:.0f}")
+    on_list = res.actions[res.actions["customer_id"] == cid]
+    if len(on_list):
+        r0 = on_list.iloc[0]
+        st.info(f"On this week's list: **{r0['action']}** · {r0['group']} · consent: {r0['whatsapp_consent']}  \n"
+                f"Suggested: {r0['suggested_message']}")
+    tl = alt.Chart(h).mark_circle(size=220, opacity=0.9).encode(
+        x=alt.X("order_datetime:T", title=None),
+        y=alt.Y("product_type:N", title=None),
+        color=alt.Color("order_status:N", scale=alt.Scale(domain=["Delivered", "Cancelled", "Returned"],
+                                                          range=[BRAND, "#C9831A", "#9AA0A6"]),
+                        legend=alt.Legend(orient="top", title=None)),
+        tooltip=[alt.Tooltip("order_datetime:T", title="Date", format="%d %b %Y"), "product_type:N",
+                 "sales_channel:N", "order_status:N", alt.Tooltip("net_revenue:Q", format=",.0f", title="KES")])
+    st.altair_chart(tl.properties(height=90 + 55 * max(h["product_type"].nunique(), 1),
+                                  title="Order history (hover a dot)"), width="stretch")
 
 # ---------------------------------------------------------------------------
 # ROI calculator
@@ -253,7 +365,7 @@ with tab_roi:
     opw = a2.number_input("Orders per won-back customer in the year", 1.0, 6.0, 2.0, 0.5)
     aov = a2.number_input("Average order value (KES)", 500, 20000, int(round(aov_default, -1)), 50)
     margin = a3.slider("Gross margin (%)", 20, 70, int(round((k["gross_margin"] or 0.49) * 100))) / 100
-    cpc = a3.number_input("Cost per message incl. perk (KES)", 0, 2000, 150, 10)
+    cpc = a3.number_input("Cost per message incl. perk (KES)", 0, 2000, 50, 10)
     fixed = a3.number_input("Fixed cost (staff time, design) KES", 0, 500000, 5000, 1000)
     r_ = p.roi_scenario(contacted, rr, opw, aov, margin, cpc, fixed)
     m1, m2, m3, m4 = st.columns(4)
@@ -264,6 +376,26 @@ with tab_roi:
     st.info(f"Break-even: the campaign pays for itself if at least **{r_['break_even_response_rate']:.1%}** "
             f"of messaged customers come back *because of* the message "
             f"(≈ {r_['break_even_response_rate'] * contacted:.1f} customers).")
+    curve = pd.DataFrame({"Uplift": [u / 100 for u in range(0, 41)]})
+    curve["Net benefit (KES)"] = [p.roi_scenario(contacted, u, opw, aov, margin, cpc, fixed)["net_benefit"]
+                                  for u in curve["Uplift"]]
+    now = pd.DataFrame({"Uplift": [rr], "Net benefit (KES)": [r_["net_benefit"]]})
+    be = r_["break_even_response_rate"]
+    line = alt.Chart(curve).mark_line(color=BRAND, strokeWidth=3).encode(
+        x=alt.X("Uplift:Q", axis=alt.Axis(format=".0%"), title="Uplift (extra share who return because of the message)"),
+        y=alt.Y("Net benefit (KES):Q", axis=alt.Axis(format=",.0f")),
+        tooltip=[alt.Tooltip("Uplift:Q", format=".0%"), alt.Tooltip("Net benefit (KES):Q", format=",.0f")])
+    zero = alt.Chart(pd.DataFrame({"y": [0]})).mark_rule(color="#999").encode(y="y:Q")
+    dot = alt.Chart(now).mark_point(size=160, filled=True, color="#C9831A").encode(
+        x="Uplift:Q", y="Net benefit (KES):Q",
+        tooltip=[alt.Tooltip("Uplift:Q", format=".0%", title="Your uplift"),
+                 alt.Tooltip("Net benefit (KES):Q", format=",.0f")])
+    layers = [zero, line, dot]
+    if be == be and 0 <= be <= 0.4:
+        layers.append(alt.Chart(pd.DataFrame({"x": [be]})).mark_rule(strokeDash=[4, 4], color=BRAND).encode(x="x:Q"))
+    st.altair_chart(alt.layer(*layers).properties(height=280,
+                    title="Net benefit as uplift changes (orange dot = your setting, dashed line = break-even)"),
+                    width="stretch")
     st.markdown("**Sensitivity – net benefit (KES) by uplift and margin**")
     grid = p.sensitivity_grid(contacted, aov, cpc, fixed, [0.02, 0.05, 0.10, 0.15, 0.20],
                               [0.40, 0.45, 0.49, 0.55], opw)

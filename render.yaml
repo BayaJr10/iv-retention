@@ -1,18 +1,17 @@
-# Render Blueprint: one free web service running the Streamlit app.
+# Render Blueprint: one free Docker web service.
+#   https://<name>.onrender.com/      -> landing page
+#   https://<name>.onrender.com/app/  -> Retention Engine (password protected)
 # Render > New > Blueprint > pick this repo. You'll be asked for APP_PASSWORD.
 services:
   - type: web
     name: iv-retention
-    runtime: python
+    runtime: docker
     plan: free
     region: frankfurt          # closest Render region to Nairobi
     branch: main
-    buildCommand: pip install -r requirements.txt
-    startCommand: streamlit run app.py --server.port $PORT --server.address 0.0.0.0 --server.headless true
-    healthCheckPath: /_stcore/health
+    dockerfilePath: ./Dockerfile
+    healthCheckPath: /healthz
     autoDeploy: true
     envVars:
-      - key: PYTHON_VERSION
-        value: 3.12.7
       - key: APP_PASSWORD
-        sync: false            # entered in the dashboard, never stored in git
+        sync: false            # entered in the Render dashboard, never stored in git

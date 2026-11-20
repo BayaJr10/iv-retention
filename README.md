@@ -70,15 +70,29 @@ The app opens on the de-identified sample until a real file is uploaded, so the 
 **Alternatives:** `docker build -t iv-retention . && docker run -p 8501:8501 iv-retention` on any small VM
 (e.g. a Johannesburg-region instance, as in the report's architecture), or Hugging Face Spaces (Streamlit SDK).
 
-## Deploy on Render (free)
+## Deploy on Render (free, Docker)
+
+One Docker service serves both parts:
+
+| URL | What |
+| --- | --- |
+| `https://<name>.onrender.com/` | Landing page (`landing/`, GSAP animations) |
+| `https://<name>.onrender.com/app/` | Retention Engine (password protected) |
+
+Inside the container nginx serves the landing page and proxies `/app/` to Streamlit (see `deploy/`).
 
 1. Sign in at **render.com** with GitHub.
-2. **New → Blueprint**, pick `BayaJr10/iv-retention`. Render reads `render.yaml`.
-3. When asked, enter a strong `APP_PASSWORD`, then **Apply**. The first build takes 3–5 minutes.
-4. Open the `https://iv-retention-xxxx.onrender.com` link. You should see only the sign-in screen.
+2. **New → Blueprint**, pick `BayaJr10/iv-retention`. Render reads `render.yaml` and builds the `Dockerfile`.
+3. When asked, enter a strong `APP_PASSWORD`, then **Apply**. The first build takes 5–8 minutes.
+4. Open the `onrender.com` link: the landing page appears; **Open the Retention Engine** asks for the password.
 
 Free services sleep after 15 minutes without visitors; the next visit takes about a minute to wake.
 Without `APP_PASSWORD` the app refuses to start on Render (it fails closed).
+
+**Landing page credits:** layout adapted from [Lingare](https://github.com/lbegey/tw-lingare-tpl) by Laurent Begey
+(MIT, `landing/LICENSE-lingare.txt`); photos from Unsplash (Unsplash Licence); GSAP 3.12.5.
+To rebuild the CSS after editing `landing/index.html`: `npx tailwindcss@3 -c landing/tailwind.config.js -o landing/styles.css --minify`
+(with an input file containing the three `@tailwind` lines).
 
 ## Schedule the weekly batch job (GitHub Actions)
 

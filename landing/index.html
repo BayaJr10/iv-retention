@@ -1,0 +1,428 @@
+<!DOCTYPE html>
+<html lang="en">
+<!--
+  Landing page for the Immaculate Vibes Retention Action Engine.
+  Layout adapted from "Lingare" by Laurent Begey (MIT licence, see LICENSE-lingare.txt).
+  Photos: Unsplash, free under the Unsplash Licence (credits in the footer).
+  Animations: GSAP + ScrollTrigger.
+-->
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Immaculate Vibes · Retention Action Engine</title>
+  <meta name="description" content="A weekly list of which customers to message, and what to say: the retention tool for Immaculate Vibes, made-to-order African-print fashion from Nairobi.">
+  <link rel="stylesheet" href="styles.css">
+  <link rel="stylesheet" href="vendor/bootstrap-icons/bootstrap-icons.min.css">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@100..900&family=Fraunces:opsz,wght@9..144,500;9..144,700&display=swap" rel="stylesheet">
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'><rect width='64' height='64' rx='14' fill='%235B2A86'/><text x='50%25' y='58%25' text-anchor='middle' font-family='Georgia' font-size='30' fill='white'>IV</text></svg>">
+  <style>
+    body { font-family: "Inter", sans-serif; background: #FBF7F2; color: #241A2E; }
+    .display { font-family: "Fraunces", Georgia, serif; letter-spacing: -0.01em; }
+    .reveal, .card, .counter-box { opacity: 0; }
+    .no-js .reveal, .no-js .card, .no-js .counter-box { opacity: 1; }
+    .h-word { display: inline-block; overflow: hidden; vertical-align: bottom; }
+    .h-word > span { display: inline-block; }
+    #track { scroll-snap-type: x mandatory; scrollbar-width: none; }
+    #track::-webkit-scrollbar { display: none; }
+    #track > a { scroll-snap-align: start; }
+    .print-band { background:
+      repeating-linear-gradient(45deg, rgba(201,131,26,.9) 0 10px, transparent 10px 22px),
+      repeating-linear-gradient(-45deg, rgba(255,255,255,.35) 0 4px, transparent 4px 22px), #5B2A86; }
+    .img-fallback { background-color: #3E1B5E; background-image: linear-gradient(135deg,#5B2A86,#3E1B5E 60%,#C9831A); }
+    .pill.active { background: #241A2E; color: white; }
+    @media (prefers-reduced-motion: reduce) { .reveal, .card, .counter-box { opacity: 1 !important; } }
+  </style>
+</head>
+
+<body class="no-js">
+  <!-- subheader (announcement bar) -->
+  <div class="subheader print-band text-white">
+    <div class="mx-auto sm:px-7 px-4 max-w-screen-xl py-4 flex flex-col md:flex-row text-center md:text-left items-center">
+      <span class="font-semibold bg-plumdark/80 px-3 py-1 rounded">
+        Staff tool for Immaculate Vibes &middot; every Monday: who to message, and what to say
+      </span>
+      <a href="/app/" class="mt-4 md:mt-0 bg-white py-2 px-6 rounded ml-0 md:ml-auto text-plum font-bold hover:bg-ochre hover:text-white transition">Open the app</a>
+    </div>
+  </div>
+
+  <header class="p-4 pb-20">
+    <div class="w-full max-w-7xl mx-auto">
+      <div class="flex justify-between gap-8 items-center">
+        <div>
+          <a href="#" class="display font-bold text-3xl md:text-4xl"><span class="border-b-4 border-ochre">Imma</span>culate Vibes</a>
+        </div>
+        <div class="flex items-center gap-8">
+          <nav class="hidden lg:flex gap-8">
+            <a href="#how" class="hover:underline">How it works</a>
+            <a href="#engine" class="hover:underline">What it does</a>
+            <a href="#monday" class="hover:underline">The Monday list</a>
+            <a href="#access" class="hover:underline">Staff access</a>
+          </nav>
+          <span class="hidden lg:block">|</span>
+          <div class="flex gap-4 text items-center">
+            <a href="#monday" aria-label="Browse the Monday list">
+              <i class="flex items-center justify-center bg-plum text-white rounded-full w-[35px] h-[35px] bi bi-search"></i>
+            </a>
+            <a href="#engine" aria-label="What the engine does">
+              <i class="flex items-center justify-center bg-plum text-white rounded-full w-[35px] h-[35px] bi bi-bag"></i>
+            </a>
+            <a href="/app/" class="text-2xl" aria-label="Sign in to the app">
+              <i class="flex items-center justify-center bg-plum text-white rounded-full w-[35px] h-[35px] bi bi-person"></i>
+            </a>
+          </div>
+        </div>
+      </div>
+    </div>
+  </header>
+
+  <!-- hero -->
+  <section class="p-4 py-10">
+    <div class="w-full max-w-7xl mx-auto">
+      <div class="flex flex-col gap-10 items-center">
+        <div class="flex gap-4 items-center reveal">
+          <div class="flex gap-1 text-ochre">
+            <i class="bi bi-star-fill"></i><i class="bi bi-star-fill"></i><i class="bi bi-star-fill"></i><i class="bi bi-star-fill"></i><i class="bi bi-star-fill"></i>
+          </div>
+          <span class="text-xs text-gray-600">Made-to-order African print &middot; Nairobi, Kenya</span>
+        </div>
+        <h1 id="hero-title" class="display text-3xl lg:text-6xl text-center leading-tight">
+          Keep your regulars coming back
+          <span class="block text-gray-400 pt-4 text-2xl lg:text-4xl">One list every Monday. Who to message, and what to say.</span>
+        </h1>
+        <div class="flex flex-col md:flex-row items-center gap-4 reveal">
+          <a href="/app/" class="magnetic bg-plum border border-plum text-white rounded-lg p-2 px-8 shadow-xl outline-none">Open the Retention Engine</a>
+          <a href="#how" class="border border-plum text-plum rounded-lg p-2 px-8 shadow-xl outline-none">See how it works</a>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- feature block -->
+  <section id="how" class="p-4 py-20">
+    <div class="w-full max-w-7xl mx-auto">
+      <div class="flex flex-col lg:flex-row gap-4">
+        <div id="hero-img" class="img-fallback flex w-full rounded-xl p-8 min-h-[400px] md:min-h-[600px] lg:min-h-[800px] bg-cover bg-center border overflow-hidden relative"
+          style="background-image:url(https://images.unsplash.com/photo-1789589725483-938b9eee22ca?w=1800&q=80&auto=format&fit=crop)"
+          role="img" aria-label="Women in patterned African-print dresses under an orange sky">
+          <div class="mt-auto flex flex-col md:flex-row gap-4 w-full relative">
+            <a href="#engine" class="bg-white hover:bg-plum hover:text-white p-2 text-xl rounded-full w-full flex gap-4 justify-between items-center transition">
+              <span class="pl-2">How it works</span>
+              <i class="flex items-center justify-center bi bi-arrow-down bg-plum text-white rounded-full p-1 w-[40px] h-[40px] text-center"></i>
+            </a>
+            <a href="/app/" class="bg-white hover:bg-plum hover:text-white p-2 text-xl rounded-full w-full flex gap-4 justify-between items-center transition">
+              <span class="pl-2">Open the app</span>
+              <i class="flex items-center justify-center bi bi-box-arrow-in-right bg-plum text-white rounded-full p-1 w-[40px] h-[40px] text-center"></i>
+            </a>
+          </div>
+        </div>
+        <div class="w-full flex flex-col gap-4">
+          <div class="w-full h-full rounded-xl p-8 bg-gradient-to-tr from-[#EFE6F5] to-white shadow-xl reveal">
+            <h2 class="display text-2xl lg:text-4xl mb-auto pb-10">
+              Most of the business comes from customers who order again.
+            </h2>
+            <p class="text-gray-700 leading-relaxed">
+              The engine reads the weekly sales export and finds three groups: first-time buyers who are due a
+              thank-you or a nudge, regulars who have gone quiet, and Palazzo orders that need a fit check before
+              cutting. Staff get one ranked list and suggested messages. Nothing is sent automatically, and no
+              customer data is stored.
+            </p>
+          </div>
+          <div class="h-full flex flex-col md:flex-row gap-4">
+            <a href="#monday" class="tile img-fallback min-h-[220px] flex w-full overflow-hidden rounded-xl bg-cover bg-center border"
+              style="background-image:url(https://images.unsplash.com/photo-1784123476756-a8fc424d1d2c?w=900&q=80&auto=format&fit=crop)"
+              role="img" aria-label="Woman in a colourful wax-print headwrap and top">
+              <p class="text-white text-lg font-bold mt-auto w-full p-2 bg-plumdark bg-opacity-80">#WaxPrint</p>
+            </a>
+            <a href="#monday" class="tile img-fallback min-h-[220px] flex w-full overflow-hidden rounded-xl bg-cover bg-center border"
+              style="background-image:url(https://images.unsplash.com/photo-1790862303813-8fdee084284d?w=900&q=80&auto=format&fit=crop)"
+              role="img" aria-label="Man in a matching jacket and trousers with a colourful geometric print">
+              <p class="text-white text-lg font-bold mt-auto w-full p-2 bg-plumdark bg-opacity-80">#MadeToMeasure</p>
+            </a>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- counters -->
+  <section class="p-4 py-10">
+    <div class="w-full max-w-7xl mx-auto grid grid-cols-2 lg:grid-cols-4 gap-4">
+      <div class="counter-box rounded-xl bg-white border p-6 shadow">
+        <div class="display text-5xl text-plum"><span class="count" data-to="3">0</span></div>
+        <p class="mt-2 text-gray-600">follow-up messages for every new customer: day 30, 60 and 90</p>
+      </div>
+      <div class="counter-box rounded-xl bg-white border p-6 shadow">
+        <div class="display text-5xl text-plum"><span class="count" data-to="20">0</span>%</div>
+        <p class="mt-2 text-gray-600">of each list held back on purpose, to prove the messages work</p>
+      </div>
+      <div class="counter-box rounded-xl bg-white border p-6 shadow">
+        <div class="display text-5xl text-plum"><span class="count" data-to="1">0</span></div>
+        <p class="mt-2 text-gray-600">ranked list every Monday, most valuable customers first</p>
+      </div>
+      <div class="counter-box rounded-xl bg-white border p-6 shadow">
+        <div class="display text-5xl text-plum"><span class="count" data-to="0">0</span></div>
+        <p class="mt-2 text-gray-600">customer files stored: uploads stay in your browser session</p>
+      </div>
+    </div>
+  </section>
+
+  <!-- collections -> what the engine does -->
+  <section id="engine" class="p-4 py-20">
+    <div class="w-full max-w-7xl mx-auto">
+      <div class="pb-8 flex justify-between items-center gap-8">
+        <h2 class="display text-4xl lg:text-5xl pb-4 reveal">What the engine does</h2>
+        <div class="hidden md:flex gap-6 text-2xl">
+          <button id="prev" aria-label="Previous">
+            <i class="flex items-center justify-center text-plum border border-plum rounded-full p-2 bi bi-arrow-left hover:bg-plum hover:text-white transition"></i>
+          </button>
+          <button id="next" aria-label="Next">
+            <i class="flex items-center justify-center text-plum border border-plum rounded-full p-2 bi bi-arrow-right hover:bg-plum hover:text-white transition"></i>
+          </button>
+        </div>
+      </div>
+
+      <div id="track" class="flex gap-4 overflow-x-auto">
+        <a href="/app/" class="card shrink-0 w-[85%] md:w-[calc(33.333%-11px)] flex flex-col gap-2">
+          <div class="h-[300px] md:h-[500px] overflow-hidden rounded-xl shadow-xl relative img-fallback">
+            <i class="flex items-center justify-center text-white rounded-full bg-plum p-2 bi bi-arrow-up-right absolute top-4 right-4 z-10"></i>
+            <img class="w-full h-full object-cover zoom" src="https://images.unsplash.com/photo-1664151099736-1ac6365a25aa?w=900&q=80&auto=format&fit=crop" alt="Woman in a green African-print dress" loading="lazy">
+          </div>
+          <h3 class="display text-2xl pt-4">Reorder nudges</h3>
+          <p class="text-gray-700">First-time buyers hear from you at day 30, 60 and 90: a thank-you, a new print that matches, then a small perk.</p>
+        </a>
+        <a href="/app/" class="card shrink-0 w-[85%] md:w-[calc(33.333%-11px)] flex flex-col gap-2">
+          <div class="h-[300px] md:h-[500px] overflow-hidden rounded-xl shadow-xl relative img-fallback">
+            <i class="flex items-center justify-center text-white rounded-full bg-plum p-2 bi bi-arrow-up-right absolute top-4 right-4 z-10"></i>
+            <img class="w-full h-full object-cover zoom" src="https://images.unsplash.com/photo-1769349661389-0737f39a8507?w=900&q=80&auto=format&fit=crop" alt="Two women in matching colourful African-print outfits" loading="lazy">
+          </div>
+          <h3 class="display text-2xl pt-4">Win-back</h3>
+          <p class="text-gray-700">Regulars who have gone quiet for about seven months are listed by past spend, with a personal message to send.</p>
+        </a>
+        <a href="/app/" class="card shrink-0 w-[85%] md:w-[calc(33.333%-11px)] flex flex-col gap-2">
+          <div class="h-[300px] md:h-[500px] overflow-hidden rounded-xl shadow-xl relative img-fallback">
+            <i class="flex items-center justify-center text-white rounded-full bg-plum p-2 bi bi-arrow-up-right absolute top-4 right-4 z-10"></i>
+            <img class="w-full h-full object-cover zoom" src="https://images.unsplash.com/photo-1760907949889-eb62b7fd9f75?w=900&q=80&auto=format&fit=crop" alt="Young woman smiling in a patterned dress" loading="lazy">
+          </div>
+          <h3 class="display text-2xl pt-4">Fit check</h3>
+          <p class="text-gray-700">Palazzo pants are cancelled more often than other styles. Confirm hip size and leg width before cutting.</p>
+        </a>
+        <a href="/app/" class="card shrink-0 w-[85%] md:w-[calc(33.333%-11px)] flex flex-col gap-2">
+          <div class="h-[300px] md:h-[500px] overflow-hidden rounded-xl shadow-xl relative img-fallback">
+            <i class="flex items-center justify-center text-white rounded-full bg-plum p-2 bi bi-arrow-up-right absolute top-4 right-4 z-10"></i>
+            <img class="w-full h-full object-cover zoom" src="https://images.unsplash.com/photo-1789589725483-938b9eee22ca?w=900&q=80&auto=format&fit=crop" alt="Women in patterned dresses under an orange sky" loading="lazy">
+          </div>
+          <h3 class="display text-2xl pt-4">Did it work?</h3>
+          <p class="text-gray-700">Compare customers you messaged with the held-back group, so you know the messages, not luck, brought people back.</p>
+        </a>
+      </div>
+    </div>
+  </section>
+
+  <!-- featured products -> the Monday list (interactive filter) -->
+  <section id="monday" class="p-4 py-20">
+    <div class="w-full max-w-7xl mx-auto">
+      <div class="flex flex-col gap-8">
+        <div class="flex flex-col lg:flex-row justify-between lg:items-center gap-4">
+          <h2 class="display text-3xl lg:text-5xl pb-4 reveal">The Monday list</h2>
+          <div class="flex flex-wrap gap-3 text-lg" role="tablist">
+            <button class="pill active p-2 px-4 border border-[#241A2E] rounded-full transition" data-filter="all">All</button>
+            <button class="pill p-2 px-4 border border-[#241A2E] hover:bg-[#241A2E] hover:text-white rounded-full transition" data-filter="new">New customers</button>
+            <button class="pill p-2 px-4 border border-[#241A2E] hover:bg-[#241A2E] hover:text-white rounded-full transition" data-filter="regular">Regulars</button>
+            <button class="pill p-2 px-4 border border-[#241A2E] hover:bg-[#241A2E] hover:text-white rounded-full transition" data-filter="fit">Fit checks</button>
+          </div>
+        </div>
+
+        <div id="grid" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+          <div class="item flex flex-col gap-2" data-cat="new">
+            <div class="h-[300px] md:h-[360px] overflow-hidden rounded-xl shadow-xl relative img-fallback">
+              <span class="absolute top-4 left-4 z-10 bg-white text-plum text-xs font-bold px-3 py-1 rounded-full">Day 30</span>
+              <img class="w-full h-full object-cover zoom" src="https://images.unsplash.com/photo-1664151099736-1ac6365a25aa?w=700&q=80&auto=format&fit=crop&crop=faces" alt="Green African-print dress" loading="lazy">
+            </div>
+            <h3 class="text-xl pt-3 flex items-center">Thank-you &amp; styling tip <span class="ml-auto text-ochre font-bold text-sm">New</span></h3>
+            <p class="text-gray-600 text-sm">"Hi Amina, how is the fit of your Kitenge set? Here's a way to style it for the weekend."</p>
+          </div>
+          <div class="item flex flex-col gap-2" data-cat="new">
+            <div class="h-[300px] md:h-[360px] overflow-hidden rounded-xl shadow-xl relative img-fallback">
+              <span class="absolute top-4 left-4 z-10 bg-white text-plum text-xs font-bold px-3 py-1 rounded-full">Day 90</span>
+              <img class="w-full h-full object-cover zoom" src="https://images.unsplash.com/photo-1784123476756-a8fc424d1d2c?w=700&q=80&auto=format&fit=crop&crop=faces" alt="Colourful wax-print headwrap and top" loading="lazy">
+            </div>
+            <h3 class="text-xl pt-3 flex items-center">A small second-order perk <span class="ml-auto text-ochre font-bold text-sm">New</span></h3>
+            <p class="text-gray-600 text-sm">"Your next outfit comes with free delivery for the next 14 days."</p>
+          </div>
+          <div class="item flex flex-col gap-2" data-cat="regular">
+            <div class="h-[300px] md:h-[360px] overflow-hidden rounded-xl shadow-xl relative img-fallback">
+              <span class="absolute top-4 left-4 z-10 bg-white text-plum text-xs font-bold px-3 py-1 rounded-full">Quiet 7+ months</span>
+              <img class="w-full h-full object-cover zoom" src="https://images.unsplash.com/photo-1769349661389-0737f39a8507?w=700&q=80&auto=format&fit=crop&crop=faces" alt="Two women in matching African-print outfits" loading="lazy">
+            </div>
+            <h3 class="text-xl pt-3 flex items-center">We miss you <span class="ml-auto text-ochre font-bold text-sm">Regular</span></h3>
+            <p class="text-gray-600 text-sm">"Our new prints just landed, and we saved you an early look."</p>
+          </div>
+          <div class="item flex flex-col gap-2" data-cat="fit">
+            <div class="h-[300px] md:h-[360px] overflow-hidden rounded-xl shadow-xl relative img-fallback">
+              <span class="absolute top-4 left-4 z-10 bg-white text-plum text-xs font-bold px-3 py-1 rounded-full">Before cutting</span>
+              <img class="w-full h-full object-cover zoom" src="https://images.unsplash.com/photo-1760907949889-eb62b7fd9f75?w=700&q=80&auto=format&fit=crop&crop=faces" alt="Woman in a patterned dress" loading="lazy">
+            </div>
+            <h3 class="text-xl pt-3 flex items-center">Palazzo fit check <span class="ml-auto text-ochre font-bold text-sm">Fit</span></h3>
+            <p class="text-gray-600 text-sm">"Quick check before we cut: hip 44 in, extra-wide legs. Reply YES to confirm."</p>
+          </div>
+        </div>
+        <p class="text-xs text-gray-500">Example messages with an invented name. Real lists show customer codes only, and staff check consent before sending.</p>
+
+        <a href="/app/" class="magnetic p-2 px-6 border border-plum text-plum hover:bg-plum hover:text-white rounded-full mx-auto text-xl transition">
+          Open this week's list <i class="bi bi-arrow-up-right"></i>
+        </a>
+      </div>
+    </div>
+  </section>
+
+  <!-- contact -> staff access -->
+  <section id="access" class="p-4 py-20">
+    <div class="mx-auto max-w-7xl w-full">
+      <div class="grid lg:grid-cols-2 grid-cols-1 items-center">
+        <div class="lg:mb-0 mb-10">
+          <div class="group w-full h-full">
+            <div class="relative h-full min-h-[640px] rounded-2xl overflow-hidden img-fallback">
+              <img src="https://images.unsplash.com/photo-1790862303813-8fdee084284d?w=1400&q=80&auto=format&fit=crop"
+                alt="Man in a colourful geometric-print suit" class="absolute inset-0 w-full h-full object-cover" loading="lazy" />
+              <h2 class="display text-white text-4xl font-bold leading-10 absolute top-11 left-11 drop-shadow-lg">Every Monday</h2>
+              <div class="absolute bottom-0 w-full lg:p-11 p-5">
+                <ol class="bg-white rounded-lg p-6 block space-y-5">
+                  <li class="flex items-center"><i class="bi bi-cloud-arrow-up text-plum text-xl"></i><span class="text-base leading-6 ml-5">Upload the week's sales export</span></li>
+                  <li class="flex items-center"><i class="bi bi-shield-check text-plum text-xl"></i><span class="text-base leading-6 ml-5">Check the data-quality tab says "passed"</span></li>
+                  <li class="flex items-center"><i class="bi bi-whatsapp text-plum text-xl"></i><span class="text-base leading-6 ml-5">Message the list top to bottom, only with consent</span></li>
+                  <li class="flex items-center"><i class="bi bi-download text-plum text-xl"></i><span class="text-base leading-6 ml-5">Download and keep the list for next month's check</span></li>
+                </ol>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div class="p-5 lg:p-11 lg:rounded-r-2xl rounded-2xl">
+          <h2 class="display text-4xl font-semibold leading-10 mb-8">Staff access</h2>
+          <p class="text-lg text-gray-700 mb-8">The Retention Engine is for Immaculate Vibes staff. Ask the owner for the password. The app may take up to a minute to wake if nobody has used it recently.</p>
+          <ul class="space-y-4 mb-10 text-gray-700">
+            <li class="flex gap-3"><i class="bi bi-check2-circle text-plum text-xl"></i>Works on a phone or laptop</li>
+            <li class="flex gap-3"><i class="bi bi-check2-circle text-plum text-xl"></i>Your file is processed in memory and never saved</li>
+            <li class="flex gap-3"><i class="bi bi-check2-circle text-plum text-xl"></i>Hold-out customers are marked so nobody messages them by mistake</li>
+          </ul>
+          <a href="/app/" class="magnetic w-full h-12 text-white text-base font-semibold leading-6 rounded-full transition-all duration-700 bg-plum hover:bg-plumdark shadow-sm flex items-center justify-center gap-2">
+            Open the Retention Engine <i class="bi bi-arrow-right"></i>
+          </a>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <footer class="p-4 pb-10 pt-20">
+    <div class="gap-8 flex flex-col md:flex-row justify-between mx-auto max-w-7xl w-full">
+      <div class="flex justify-center space-x-6">
+        <span class="inline-flex justify-center w-full gap-3 md:justify-start md:w-auto text-xl">
+          <a class="transition hover:text-plum" href="#" aria-label="TikTok"><i class="bi bi-tiktok"></i></a>
+          <a class="transition hover:text-plum" href="#" aria-label="Instagram"><i class="bi bi-instagram"></i></a>
+          <a class="transition hover:text-plum" href="#" aria-label="WhatsApp"><i class="bi bi-whatsapp"></i></a>
+        </span>
+      </div>
+      <div class="text-xs text-gray-500 md:text-right space-y-1">
+        <p>&copy; <span id="yr">2026</span> Immaculate Vibes &middot; Retention Action Engine</p>
+        <p>Layout adapted from <a class="underline" href="https://github.com/lbegey/tw-lingare-tpl">Lingare</a> by Laurent Begey (MIT licence).</p>
+        <p>Photos on <a class="underline" href="https://unsplash.com">Unsplash</a> by ishakah rumbani, Barney Goodman, John Ekow, Delight Dzansi, Mubarak Abubakar and Theresa Ude.</p>
+      </div>
+    </div>
+  </footer>
+
+  <script src="vendor/gsap.min.js"></script>
+  <script src="vendor/ScrollTrigger.min.js"></script>
+  <script>
+    document.getElementById('yr').textContent = new Date().getFullYear();
+    const reduce = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+
+    // Carousel arrows (work with or without GSAP)
+    const track = document.getElementById('track');
+    const step = () => track.querySelector('a').getBoundingClientRect().width + 16;
+    document.getElementById('next').onclick = () => track.scrollBy({ left: step(), behavior: 'smooth' });
+    document.getElementById('prev').onclick = () => track.scrollBy({ left: -step(), behavior: 'smooth' });
+
+    // Filter pills
+    const pills = document.querySelectorAll('.pill');
+    const items = document.querySelectorAll('#grid .item');
+    pills.forEach(p => p.addEventListener('click', () => {
+      pills.forEach(x => x.classList.remove('active'));
+      p.classList.add('active');
+      const f = p.dataset.filter;
+      items.forEach(it => {
+        const show = f === 'all' || it.dataset.cat === f;
+        if (window.gsap && !reduce) {
+          if (show) { it.style.display = ''; gsap.fromTo(it, { autoAlpha: 0, y: 24, scale: .97 }, { autoAlpha: 1, y: 0, scale: 1, duration: .45, ease: 'power2.out' }); }
+          else { gsap.to(it, { autoAlpha: 0, y: 12, duration: .2, onComplete: () => { it.style.display = 'none'; } }); }
+        } else { it.style.display = show ? '' : 'none'; }
+      });
+    }));
+
+    if (!window.gsap || reduce) {
+      document.body.classList.remove('no-js');
+      document.querySelectorAll('.reveal,.card,.counter-box').forEach(e => e.style.opacity = 1);
+      document.querySelectorAll('.count').forEach(c => c.textContent = c.dataset.to);
+    } else {
+      document.body.classList.remove('no-js');
+      gsap.registerPlugin(ScrollTrigger);
+
+      // Hero headline: word-by-word rise
+      const h = document.getElementById('hero-title');
+      const first = h.childNodes[0];
+      const words = first.textContent.trim().split(/\s+/);
+      const wrap = document.createElement('span');
+      wrap.innerHTML = words.map(w => `<span class="h-word"><span>${w}</span></span>`).join(' ');
+      h.replaceChild(wrap, first);
+      const tl = gsap.timeline({ defaults: { ease: 'power3.out' } });
+      tl.from('.subheader', { y: -40, autoAlpha: 0, duration: .6 })
+        .from('header', { y: -20, autoAlpha: 0, duration: .5 }, '-=.3')
+        .from('#hero-title .h-word > span', { yPercent: 110, duration: .9, stagger: .07 }, '-=.2')
+        .from('#hero-title > span.block', { autoAlpha: 0, y: 20, duration: .7 }, '-=.5')
+        .to('section:first-of-type .reveal', { autoAlpha: 1, y: 0, duration: .6, stagger: .12 }, '-=.4');
+
+      // Generic reveals
+      gsap.utils.toArray('.reveal').forEach(el => {
+        if (el.closest('section') === document.querySelector('section')) return;
+        gsap.fromTo(el, { autoAlpha: 0, y: 40 }, { autoAlpha: 1, y: 0, duration: .9, ease: 'power3.out',
+          scrollTrigger: { trigger: el, start: 'top 85%' } });
+      });
+
+      // Big image: slow parallax zoom
+      gsap.fromTo('#hero-img', { backgroundSize: '120%' }, { backgroundSize: '100%', ease: 'none',
+        scrollTrigger: { trigger: '#hero-img', start: 'top bottom', end: 'bottom top', scrub: true } });
+      gsap.from('.tile', { autoAlpha: 0, y: 60, stagger: .15, duration: .8, ease: 'power3.out',
+        scrollTrigger: { trigger: '.tile', start: 'top 85%' } });
+
+      // Counters
+      ScrollTrigger.batch('.counter-box', { start: 'top 85%', once: true, onEnter: boxes => {
+        gsap.to(boxes, { autoAlpha: 1, y: 0, stagger: .12, duration: .6 });
+        boxes.forEach(b => { const c = b.querySelector('.count'); const o = { v: 0 };
+          gsap.to(o, { v: +c.dataset.to, duration: 1.4, ease: 'power2.out', onUpdate: () => c.textContent = Math.round(o.v) }); });
+      }});
+
+      // Cards
+      ScrollTrigger.batch('.card', { start: 'top 88%', once: true,
+        onEnter: b => gsap.fromTo(b, { autoAlpha: 0, y: 60 }, { autoAlpha: 1, y: 0, stagger: .12, duration: .8, ease: 'power3.out' }) });
+      gsap.from('#grid .item', { autoAlpha: 0, y: 50, stagger: .1, duration: .7, ease: 'power3.out',
+        scrollTrigger: { trigger: '#grid', start: 'top 85%' } });
+
+      // Image hover zoom
+      document.querySelectorAll('.zoom').forEach(img => {
+        const box = img.parentElement;
+        box.addEventListener('mouseenter', () => gsap.to(img, { scale: 1.06, duration: .6, ease: 'power2.out' }));
+        box.addEventListener('mouseleave', () => gsap.to(img, { scale: 1, duration: .6, ease: 'power2.out' }));
+      });
+
+      // Magnetic buttons
+      document.querySelectorAll('.magnetic').forEach(btn => {
+        const xTo = gsap.quickTo(btn, 'x', { duration: .4, ease: 'power3' }), yTo = gsap.quickTo(btn, 'y', { duration: .4, ease: 'power3' });
+        btn.addEventListener('mousemove', e => { const r = btn.getBoundingClientRect();
+          xTo((e.clientX - r.left - r.width / 2) * .25); yTo((e.clientY - r.top - r.height / 2) * .35); });
+        btn.addEventListener('mouseleave', () => { xTo(0); yTo(0); });
+      });
+    }
+  </script>
+</body>
+</html>

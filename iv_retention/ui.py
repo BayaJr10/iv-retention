@@ -91,6 +91,7 @@ h1, h2, h3, .iv-display {{ font-family: 'Fraunces', Georgia, serif !important; l
 .stTabs [data-baseweb="tab-list"] {{ gap: 4px; border-bottom: 1px solid {LINE}; }}
 .stTabs [data-baseweb="tab"] {{ padding: 10px 16px; border-radius: 10px 10px 0 0; font-weight:500; }}
 .stTabs [aria-selected="true"] {{ background: {CARD}; color:{PLUM} !important; }}
+[data-testid="stMetricValue"] {{ font-size: 1.55rem !important; }}
 [data-testid="stMetric"] {{ background:{CARD}; border:1px solid {LINE}; border-radius:14px; padding:14px 16px; }}
 .stDownloadButton button, .stButton button {{ border-radius:10px; font-weight:600; }}
 .iv-howto {{ background:#F6F0FA; border-left:4px solid {PLUM}; border-radius:10px; padding:12px 16px; color:{INK}; font-size:.92rem; }}
