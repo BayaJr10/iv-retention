@@ -25,6 +25,9 @@ http {
     location = /healthz { access_log off; return 200 "ok\n"; }
 
     # Landing page and its assets (long cache for vendored files)
+    # Business logo shared by landing page and app (put the file in assets/)
+    location /assets/ { alias ${APP_ROOT}/assets/; expires 1d; }
+
     location /vendor/ { expires 30d; add_header Cache-Control "public"; }
     location / { try_files $uri $uri/ /index.html; }
 
