@@ -26,7 +26,7 @@ BRAND = ui.PLUM
 SAMPLE = Path(__file__).parent / "sample_data" / "sample_sales.csv"
 
 st.set_page_config(page_title="Immaculate Vibes – Retention", layout="wide",
-                   page_icon=str(ui.logo_path()) if ui.logo_path() else "🧵")
+                   page_icon=str(ui.icon_path()) if ui.icon_path() else "🧵")
 ui.inject_css()
 
 

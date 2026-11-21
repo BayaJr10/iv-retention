@@ -28,6 +28,11 @@ def logo_path() -> Path | None:
     return None
 
 
+def icon_path() -> Path | None:
+    f = ASSETS / "icon.png"
+    return f if f.exists() else logo_path()
+
+
 def _logo_data_uri() -> str | None:
     f = logo_path()
     if not f:
@@ -59,7 +64,7 @@ h1, h2, h3, .iv-display {{ font-family: 'Fraunces', Georgia, serif !important; l
 .iv-header::after {{ content:""; position:absolute; right:-40px; top:0; bottom:0; width:260px; opacity:.18;
   background: repeating-linear-gradient(45deg, {OCHRE} 0 10px, transparent 10px 22px),
               repeating-linear-gradient(-45deg, #fff 0 4px, transparent 4px 22px); }}
-.iv-header img {{ height: 56px; width:auto; background:#fff; border-radius: 12px; padding: 6px; }}
+.iv-header img {{ height: 64px; width:auto; background:#141012; border-radius: 12px; padding: 6px 10px; }}
 .iv-header .iv-title {{ font-family:'Fraunces',serif; font-size: 1.7rem; line-height:1.1; margin:0; color:#fff; }}
 .iv-header .iv-sub {{ opacity:.85; font-size:.92rem; margin-top:4px; }}
 .iv-wordmark {{ display:inline-block; font-family:'Fraunces',serif; font-weight:700; font-size:1.05rem; background:#fff; color:{PLUM};
@@ -102,7 +107,8 @@ h1, h2, h3, .iv-display {{ font-family: 'Fraunces', Georgia, serif !important; l
 def logo_html(height: int = 56) -> str:
     uri = _logo_data_uri()
     if uri:
-        return f'<img src="{uri}" alt="Immaculate Vibes logo" style="height:{height}px">'
+        return (f'<img src="{uri}" alt="Immaculate Vibe 254 logo" style="height:{height}px;width:auto;'
+                f'background:#141012;border-radius:12px;padding:8px 12px">')
     return '<div class="iv-wordmark">Immaculate<br>Vibes<span>NAIROBI</span></div>'
 
 
