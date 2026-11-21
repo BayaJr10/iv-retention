@@ -1,5 +1,5 @@
 """
-Immaculate Vibes – Retention Action Engine (owner / staff app)
+Immaculate Vibes 254 – Retention Action Engine (owner / staff app)
 
 Run locally:   streamlit run app.py
 Every Monday the owner (or the sales champion) uploads the latest sales export
@@ -25,7 +25,7 @@ from iv_retention import ui
 BRAND = ui.PLUM
 SAMPLE = Path(__file__).parent / "sample_data" / "sample_sales.csv"
 
-st.set_page_config(page_title="Immaculate Vibes – Retention", layout="wide",
+st.set_page_config(page_title="Immaculate Vibes 254 – Retention", layout="wide",
                    page_icon=str(ui.icon_path()) if ui.icon_path() else "🧵")
 ui.inject_css()
 

@@ -107,9 +107,9 @@ h1, h2, h3, .iv-display {{ font-family: 'Fraunces', Georgia, serif !important; l
 def logo_html(height: int = 56) -> str:
     uri = _logo_data_uri()
     if uri:
-        return (f'<img src="{uri}" alt="Immaculate Vibe 254 logo" style="height:{height}px;width:auto;'
+        return (f'<img src="{uri}" alt="Immaculate Vibes 254 logo" style="height:{height}px;width:auto;'
                 f'background:#141012;border-radius:12px;padding:8px 12px">')
-    return '<div class="iv-wordmark">Immaculate<br>Vibes<span>NAIROBI</span></div>'
+    return '<div class="iv-wordmark">Immaculate<br>Vibes<span>254</span></div>'
 
 
 def sidebar_logo() -> None:

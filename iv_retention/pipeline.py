@@ -1,5 +1,5 @@
 """
-Immaculate Vibes – Retention Action Engine (scoring pipeline)
+Immaculate Vibes 254 – Retention Action Engine (scoring pipeline)
 =============================================================
 
 This module is the *deployment* version of the analysis in
@@ -368,7 +368,7 @@ def _attach_consent(df: pd.DataFrame, consent: pd.DataFrame | None) -> pd.DataFr
 
 def build_action_list(df: pd.DataFrame, life: pd.DataFrame, cfg: dict,
                       consent: pd.DataFrame | None = None) -> pd.DataFrame:
-    """Everyone who should hear from Immaculate Vibes this week, in priority order."""
+    """Everyone who should hear from Immaculate Vibes 254 this week, in priority order."""
     last_product = (df[df["order_status"] == "Delivered"].sort_values("order_datetime")
                     .groupby("customer_id")["product_type"].last())
     window = cfg["nudge_window_days"]

@@ -1,4 +1,4 @@
-# Immaculate Vibes – Retention Action Engine
+# Immaculate Vibes 254 – Retention Action Engine
 
 A weekly decision aid that turns the sales export into **one list of who to contact
 this week** (reorder nudges and win-back messages), checks the retention KPIs against
